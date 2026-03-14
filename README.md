@@ -605,6 +605,23 @@ Reserved flags `-t`, `-P`, and `-F` are managed internally and must not be inclu
 
 If omitted, TmuxAI uses the legacy default: `-d -h`.
 
+### Single-pane mode
+
+Run TmuxAI without creating a separate exec pane — useful for popup windows, bottom bars, or custom layouts where only one pane is available:
+
+```bash
+tmuxai --no-exec-pane
+```
+
+Or in config:
+
+```yaml
+tmux:
+  no_exec_pane: true
+```
+
+In single-pane mode, TmuxAI can still chat, answer questions, and provide instructions — it just cannot execute commands, send keystrokes, or paste content.
+
 ### Environment Variables
 
 All configuration options can also be set via environment variables, which take precedence over the config file. Use the prefix `TMUXAI_` followed by the uppercase configuration key:

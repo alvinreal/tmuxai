@@ -92,8 +92,10 @@ func NewManager(cfg *config.Config) (*Manager, error) {
 	manager.confirmedToExec = manager.confirmedToExecFn
 	manager.getTmuxPanesInXml = manager.getTmuxPanesInXmlFn
 
-	if err := manager.InitExecPane(); err != nil {
-		return nil, err
+	if !manager.GetNoExecPane() {
+		if err := manager.InitExecPane(); err != nil {
+			return nil, err
+		}
 	}
 
 	// Auto-load knowledge bases from config

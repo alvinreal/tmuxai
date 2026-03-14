@@ -30,7 +30,9 @@ func (m *Manager) ProcessUserMessage(ctx context.Context, message string) bool {
 
 	currentTmuxWindow := m.getTmuxPanesInXml(m.Config)
 	execPaneEnv := ""
-	if !m.ExecPane.IsSubShell {
+	if m.GetNoExecPane() {
+		execPaneEnv = "SINGLE PANE MODE: No exec pane is available. You can only respond with messages to the user. You cannot execute commands, send keys, or paste content."
+	} else if m.ExecPane != nil && !m.ExecPane.IsSubShell {
 		execPaneEnv = fmt.Sprintf("Keep in mind, you are working within the shell: %s and OS: %s", m.ExecPane.Shell, m.ExecPane.OS)
 	}
 	currentMessage := ChatMessage{
@@ -42,9 +44,11 @@ func (m *Manager) ProcessUserMessage(ctx context.Context, message string) bool {
 	// build current chat history
 	var history []ChatMessage
 	switch {
+	case m.GetNoExecPane():
+		history = []ChatMessage{m.singlePanePrompt()}
 	case m.WatchMode:
 		history = []ChatMessage{m.watchPrompt()}
-	case m.ExecPane.IsPrepared:
+	case m.ExecPane != nil && m.ExecPane.IsPrepared:
 		history = []ChatMessage{m.chatAssistantPrompt(true)}
 	default:
 		history = []ChatMessage{m.chatAssistantPrompt(false)}
@@ -161,8 +165,12 @@ func (m *Manager) ProcessUserMessage(ctx context.Context, message string) bool {
 		m.Messages = append(m.Messages, currentMessage, responseMsg)
 	}
 
-	// observe/prepared mode
+	// observe/prepared mode — skip if single pane mode
 	for _, execCommand := range r.ExecCommand {
+		if !m.HasExecPane() {
+			m.Println("No exec pane available. Use --no-exec-pane=false or remove no_exec_pane from config.")
+			break
+		}
 		code, _ := system.HighlightCode("sh", execCommand)
 		m.Println(code)
 
@@ -187,45 +195,49 @@ func (m *Manager) ProcessUserMessage(ctx context.Context, message string) bool {
 		}
 	}
 
-	// Process SendKeys
+	// Process SendKeys — skip if single pane mode
 	if len(r.SendKeys) > 0 {
-		// Show preview of all keys
-		keysPreview := "Keys to send:\n"
-		for i, sendKey := range r.SendKeys {
-			code, _ := system.HighlightCode("txt", sendKey)
-			if i == len(r.SendKeys)-1 {
-				keysPreview += code
-			} else {
-				keysPreview += code + "\n"
+		if !m.HasExecPane() {
+			m.Println("No exec pane available. Use --no-exec-pane=false or remove no_exec_pane from config.")
+		} else {
+			// Show preview of all keys
+			keysPreview := "Keys to send:\n"
+			for i, sendKey := range r.SendKeys {
+				code, _ := system.HighlightCode("txt", sendKey)
+				if i == len(r.SendKeys)-1 {
+					keysPreview += code
+				} else {
+					keysPreview += code + "\n"
+				}
+				if m.Status == "" {
+					return false
+				}
 			}
-			if m.Status == "" {
-				return false
+
+			m.Println(keysPreview)
+
+			// Determine confirmation message based on number of keys
+			confirmMessage := "Send this key?"
+			if len(r.SendKeys) > 1 {
+				confirmMessage = "Send all these keys?"
 			}
-		}
 
-		m.Println(keysPreview)
-
-		// Determine confirmation message based on number of keys
-		confirmMessage := "Send this key?"
-		if len(r.SendKeys) > 1 {
-			confirmMessage = "Send all these keys?"
-		}
-
-		// Get confirmation if required
-		var allConfirmed bool
-		if m.GetSendKeysConfirm() {
-			allConfirmed, _ = m.confirmedToExec("keys shown above", confirmMessage, true)
-			if !allConfirmed {
-				m.Status = ""
-				return false
+			// Get confirmation if required
+			var allConfirmed bool
+			if m.GetSendKeysConfirm() {
+				allConfirmed, _ = m.confirmedToExec("keys shown above", confirmMessage, true)
+				if !allConfirmed {
+					m.Status = ""
+					return false
+				}
 			}
-		}
 
-		// Send each key with delay
-		for _, sendKey := range r.SendKeys {
-			m.Println("Sending keys: " + sendKey)
-			_ = system.TmuxSendCommandToPane(m.ExecPane.Id, sendKey, false)
-			time.Sleep(1 * time.Second)
+			// Send each key with delay
+			for _, sendKey := range r.SendKeys {
+				m.Println("Sending keys: " + sendKey)
+				_ = system.TmuxSendCommandToPane(m.ExecPane.Id, sendKey, false)
+				time.Sleep(1 * time.Second)
+			}
 		}
 	}
 
@@ -240,25 +252,29 @@ func (m *Manager) ProcessUserMessage(ctx context.Context, message string) bool {
 		}
 	}
 
-	// observe or prepared mode
+	// observe or prepared mode — skip if single pane mode
 	if r.PasteMultilineContent != "" {
-		code, _ := system.HighlightCode("txt", r.PasteMultilineContent)
-		fmt.Println(code)
-
-		isSafe := false
-		if m.GetPasteMultilineConfirm() {
-			isSafe, _ = m.confirmedToExec(r.PasteMultilineContent, "Paste multiline content?", false)
+		if !m.HasExecPane() {
+			m.Println("No exec pane available. Use --no-exec-pane=false or remove no_exec_pane from config.")
 		} else {
-			isSafe = true
-		}
+			code, _ := system.HighlightCode("txt", r.PasteMultilineContent)
+			fmt.Println(code)
 
-		if isSafe {
-			m.Println("Pasting...")
-			_ = system.TmuxSendCommandToPane(m.ExecPane.Id, r.PasteMultilineContent, true)
-			time.Sleep(1 * time.Second)
-		} else {
-			m.Status = ""
-			return false
+			isSafe := false
+			if m.GetPasteMultilineConfirm() {
+				isSafe, _ = m.confirmedToExec(r.PasteMultilineContent, "Paste multiline content?", false)
+			} else {
+				isSafe = true
+			}
+
+			if isSafe {
+				m.Println("Pasting...")
+				_ = system.TmuxSendCommandToPane(m.ExecPane.Id, r.PasteMultilineContent, true)
+				time.Sleep(1 * time.Second)
+			} else {
+				m.Status = ""
+				return false
+			}
 		}
 	}
 

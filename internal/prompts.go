@@ -152,6 +152,32 @@ I'll wait for it to complete before proceeding.
 	}
 }
 
+func (m *Manager) singlePanePrompt() ChatMessage {
+	prompt := m.baseSystemPrompt() + `
+You are running in SINGLE PANE MODE — there is no exec pane available.
+You cannot execute commands, send keystrokes, or paste content.
+Your only way to respond is by talking to the user directly.
+
+You can still:
+- Answer questions and provide guidance
+- Give instructions and explain concepts
+- Discuss code, configurations, and solutions
+- Provide shell commands for the user to run themselves
+
+When responding:
+- Keep responses helpful but concise
+- If the user asks you to run something, explain that you are in single-pane mode and provide the command for them to run
+- Use <WaitingForUserResponse>1</WaitingForUserResponse> when you have a question or need input
+- Use <RequestAccomplished>1</RequestAccomplished> when you have fully answered the user's request
+`
+
+	return ChatMessage{
+		Content:   prompt,
+		Timestamp: time.Now(),
+		FromUser:  false,
+	}
+}
+
 func (m *Manager) watchPrompt() ChatMessage {
 	chatPrompt := fmt.Sprintf(`
 %s

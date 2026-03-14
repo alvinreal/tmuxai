@@ -15,8 +15,8 @@ func (m *Manager) GetTmuxPanes() ([]system.TmuxPaneDetails, error) {
 
 	for i := range currentPanes {
 		currentPanes[i].IsTmuxAiPane = currentPanes[i].Id == currentPaneId
-		currentPanes[i].IsTmuxAiExecPane = currentPanes[i].Id == m.ExecPane.Id
-		currentPanes[i].IsPrepared = currentPanes[i].Id == m.ExecPane.Id
+		currentPanes[i].IsTmuxAiExecPane = m.HasExecPane() && currentPanes[i].Id == m.ExecPane.Id
+		currentPanes[i].IsPrepared = m.HasExecPane() && currentPanes[i].Id == m.ExecPane.Id
 		if currentPanes[i].IsSubShell {
 			currentPanes[i].OS = "OS Unknown (subshell)"
 		} else {

@@ -85,6 +85,7 @@ type KnowledgeBaseConfig struct {
 // ExecSplitArgs are raw args passed to `tmux split-window` before target/format flags.
 type TmuxConfig struct {
 	ExecSplitArgs []string `mapstructure:"exec_split_args"`
+	NoExecPane    bool     `mapstructure:"no_exec_pane"`
 }
 
 // DefaultConfig returns a configuration with default values

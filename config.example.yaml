@@ -21,6 +21,7 @@ wait_interval: 5
 #   ["-d", "-h"]                # horizontal split
 #   ["-d", "-v"]                # vertical split
 #   ["-d", "-v", "-p", "70"]  # vertical, 70%
+# no_exec_pane: true           # single-pane mode: no exec pane, chat-only
 tmux:
   exec_split_args: ["-d", "-h"]
 

@@ -12,6 +12,11 @@ import (
 	"github.com/alvinunreal/tmuxai/system"
 )
 
+// HasExecPane returns true if an exec pane is available for command execution.
+func (m *Manager) HasExecPane() bool {
+	return m.ExecPane != nil && m.ExecPane.Id != ""
+}
+
 // GetAvailablePane finds an available pane or creates a new one if none are available
 func (m *Manager) GetAvailablePane() system.TmuxPaneDetails {
 	panes, _ := m.GetTmuxPanes()

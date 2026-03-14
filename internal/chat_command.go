@@ -73,6 +73,10 @@ func (m *Manager) ProcessSubCommand(command string) {
 		return
 
 	case prefixMatch(commandPrefix, "/prepare"):
+		if m.GetNoExecPane() {
+			m.Println("Cannot prepare exec pane in single-pane mode (no exec pane available).")
+			return
+		}
 		supportedShells := []string{"bash", "zsh", "fish"}
 		if err := m.InitExecPane(); err != nil {
 			m.Println(fmt.Sprintf("Error preparing exec pane: %v", err))
@@ -145,7 +149,9 @@ func (m *Manager) ProcessSubCommand(command string) {
 		m.Status = ""
 		m.Messages = []ChatMessage{}
 		_ = system.TmuxClearPane(m.PaneId)
-		_ = system.TmuxClearPane(m.ExecPane.Id)
+		if m.HasExecPane() {
+			_ = system.TmuxClearPane(m.ExecPane.Id)
+		}
 		return
 
 	case prefixMatch(commandPrefix, "/exit"):

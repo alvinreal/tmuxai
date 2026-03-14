@@ -17,6 +17,7 @@ var AllowedConfigKeys = []string{
 	"paste_multiline_confirm",
 	"exec_confirm",
 	"yolo",
+	"tmux.no_exec_pane",
 	"openrouter.model",
 	"openai.api_key",
 	"openai.model",
@@ -101,6 +102,15 @@ func (m *Manager) GetYolo() bool {
 		}
 	}
 	return m.Config.Yolo
+}
+
+func (m *Manager) GetNoExecPane() bool {
+	if override, exists := m.SessionOverrides["tmux.no_exec_pane"]; exists {
+		if val, ok := override.(bool); ok {
+			return val
+		}
+	}
+	return m.Config.Tmux.NoExecPane
 }
 
 func (m *Manager) GetOpenRouterModel() string {

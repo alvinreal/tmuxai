@@ -14,11 +14,12 @@ import (
 )
 
 var (
-	initMessage  string
-	taskFileFlag string
-	kbFlag       string
-	modelFlag    string
-	yoloFlag     bool
+	initMessage    string
+	taskFileFlag   string
+	kbFlag         string
+	modelFlag      string
+	yoloFlag       bool
+	noExecPaneFlag bool
 )
 
 var rootCmd = &cobra.Command{
@@ -93,6 +94,7 @@ func init() {
 	rootCmd.Flags().StringVar(&kbFlag, "kb", "", "Comma-separated list of knowledge bases to load (e.g., --kb docker,git)")
 	rootCmd.Flags().StringVar(&modelFlag, "model", "", "AI model configuration to use (e.g., --model gpt4)")
 	rootCmd.Flags().BoolVar(&yoloFlag, "yolo", false, "Skip all confirmation prompts and execute commands directly")
+	rootCmd.Flags().BoolVar(&noExecPaneFlag, "no-exec-pane", false, "Run in single-pane mode without creating an exec pane")
 	rootCmd.Flags().BoolP("version", "v", false, "Print version information")
 }
 
